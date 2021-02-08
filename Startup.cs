@@ -16,6 +16,7 @@ using Microsoft.OpenApi.Models;
 using NetCoreAPI_v3.Data;
 using NetCoreAPI_v3.Helpers;
 using NetCoreAPI_v3.Services;
+using NetCoreAPI_v3.Services.Product;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -88,6 +89,7 @@ namespace NetCoreAPI_v3
             //------Service------
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IProductService, ProductService>();
             //------End: Service------
 
             AddFormatters(services);

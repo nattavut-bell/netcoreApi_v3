@@ -19,6 +19,10 @@ namespace NetCoreAPI_v3
             CreateMap<RoleDtoAdd, Role>()
                 .ForMember(x => x.Name, x => x.MapFrom(x => x.RoleName)); ;
             CreateMap<UserRole, UserRoleDto>();
+
+            CreateMap<ProductGroup, GetProductGroupDto>().ReverseMap();
+            CreateMap<Product, GetProductDto>().ReverseMap();
+
         }
     }
 }
