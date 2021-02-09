@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using NetCoreAPI_v3.DTOs;
 
 namespace NetCoreAPI_v3.Models
 {
@@ -26,5 +27,11 @@ namespace NetCoreAPI_v3.Models
 
         [Required]
         public int ProductGroupId { get; set; }
+
+        public ProductGroup ProductGroup { get; set; }
+
+        public User CreatedByUser { get; set; }
+
+        public User UpdatedByUser { get; set; }
     }
 }

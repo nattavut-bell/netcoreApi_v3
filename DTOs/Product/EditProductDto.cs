@@ -9,7 +9,7 @@ namespace NetCoreAPI_v3.DTOs
         [Required]
         public string Name { get; set; }
         public decimal Price { get; set; }
-        public int StockCount { get; set; }
+        public int Stock { get; set; }
         [Required]
         public int ProductGroupId { get; set; }
     }

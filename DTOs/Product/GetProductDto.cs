@@ -12,14 +12,16 @@ namespace NetCoreAPI_v3.DTOs
         public int Stock { get; set; }
 
         public bool IsActive { get; set; }
-        public UserDto CreatedBy { get; set; }
+        public UserDto CreatedByUser { get; set; }
 
         public DateTime CreatedDate { get; set; }
 
-        public UserDto UpdatedBy { get; set; }
+        public UserDto UpdatedByUser { get; set; }
 
         public DateTime UpdatedDate { get; set; }
 
-        public int ProductGroupId { get; set; }
+        // public int ProductGroupId { get; set; }
+
+        public GetProductGroupDto ProductGroup { get; set; }
     }
 }

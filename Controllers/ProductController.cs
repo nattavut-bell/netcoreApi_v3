@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using NetCoreAPI_v3.DTOs;
-using NetCoreAPI_v3.Services.Product;
+using NetCoreAPI_v3.Services;
 
 namespace NetCoreAPI_v3.Controllers
 {
@@ -42,11 +42,31 @@ namespace NetCoreAPI_v3.Controllers
         }
 
 
+        [HttpGet]
+        [Route("getProduct")]
+        public async Task<IActionResult> GetAllProduct()
+        {
+            return Ok(await _productService.GetAllProduct());
+        }
 
+        [HttpGet("getProductById")]
+        public async Task<IActionResult> GetProductById(int productId)
+        {
+            return Ok(await _productService.GetProductById(productId));
+        }
+
+        [HttpPost("addProduct")]
+        public async Task<IActionResult> AddProduct(AddProductDto addProduct)
+        {
+            return Ok(await _productService.AddProduct(addProduct));
+        }
+
+        [HttpDelete("deleteProduct")]
+        public async Task<IActionResult> DeleteProduct(int productId)
+        {
+            return Ok(await _productService.DeleteProduct(productId));
+        }
     }
-
-
-
 
 
 }

@@ -16,7 +16,6 @@ using Microsoft.OpenApi.Models;
 using NetCoreAPI_v3.Data;
 using NetCoreAPI_v3.Helpers;
 using NetCoreAPI_v3.Services;
-using NetCoreAPI_v3.Services.Product;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

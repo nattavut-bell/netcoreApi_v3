@@ -8,8 +8,6 @@ using Microsoft.Extensions.Logging;
 using NetCoreAPI_v3.Data;
 using NetCoreAPI_v3.DTOs;
 using NetCoreAPI_v3.Models;
-using NetCoreAPI_v3.Services;
-using NetCoreAPI_v3.Services.Product;
 
 namespace NetCoreAPI_v3.Services
 {
@@ -44,17 +42,19 @@ namespace NetCoreAPI_v3.Services
             _dBContext.ProductGroups.Add(productGroup);
             await _dBContext.SaveChangesAsync();
 
-            // var x2 = await productGroup.
+            var result = await _dBContext.ProductGroups
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.Id == productGroup.Id);
 
-            var x1 = await _dBContext.ProductGroups.Include(x => x.UpdatedByUser).Include(x => x.CreatedByUser).FirstOrDefaultAsync(x => x.Id == productGroup.Id);
-
-            var dto = _mapper.Map<GetProductGroupDto>(x1);
+            var dto = _mapper.Map<GetProductGroupDto>(result);
             return ResponseResult.Success(dto);
         }
 
         public async Task<ServiceResponse<GetProductGroupDto>> DeleteProductGroup(int productGroupId)
         {
-            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.ProductGroupId == productGroupId);
+            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.ProductGroupId == productGroupId || x.IsActive == true);
             if (product != null)
             {
                 return ResponseResult.Failure<GetProductGroupDto>("ProductGroup used ?");
@@ -81,9 +81,13 @@ namespace NetCoreAPI_v3.Services
             _dBContext.ProductGroups.Update(productGroup);
             await _dBContext.SaveChangesAsync();
 
-            var x1 = await _dBContext.ProductGroups.Include(x => x.UpdatedByUser).Include(x => x.CreatedByUser).FirstOrDefaultAsync(x => x.Id == productGroupId);
+            var result = await _dBContext.ProductGroups
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.Id == productGroupId);
 
-            var dto = _mapper.Map<GetProductGroupDto>(x1);
+            var dto = _mapper.Map<GetProductGroupDto>(result);
             return ResponseResult.Success(dto);
         }
 
@@ -107,32 +111,168 @@ namespace NetCoreAPI_v3.Services
             _dBContext.ProductGroups.Update(productGroup);
             await _dBContext.SaveChangesAsync();
 
-            var x1 = await _dBContext.ProductGroups.Include(x => x.UpdatedByUser).Include(x => x.CreatedByUser).FirstOrDefaultAsync(x => x.Id == editProductGroup.Id);
+            var result = await _dBContext.ProductGroups
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.Id == editProductGroup.Id);
 
-            var dto = _mapper.Map<GetProductGroupDto>(x1);
+            var dto = _mapper.Map<GetProductGroupDto>(result);
             return ResponseResult.Success(dto);
         }
 
         public async Task<ServiceResponse<List<GetProductGroupDto>>> GetAllProductGroup()
         {
-            var productGroup = await _dBContext.ProductGroups.Include(x => x.UpdatedByUser).Include(x => x.CreatedByUser).AsNoTracking().ToListAsync();
+            var result = await _dBContext.ProductGroups
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.Product)
+            .AsNoTracking().ToListAsync();
 
-
-
-            var dto = _mapper.Map<List<GetProductGroupDto>>(productGroup);
+            var dto = _mapper.Map<List<GetProductGroupDto>>(result);
             return ResponseResult.Success(dto);
         }
 
         public async Task<ServiceResponse<GetProductGroupDto>> GetProductGroupById(int productGroupId)
         {
-            var productGroup = await _dBContext.ProductGroups.Include(x => x.UpdatedByUser).Include(x => x.CreatedByUser).FirstOrDefaultAsync(x => x.Id == productGroupId);
+            var result = await _dBContext.ProductGroups
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.Id == productGroupId);
 
-            if (productGroup == null)
+            if (result == null)
             {
                 return ResponseResult.Failure<GetProductGroupDto>("ProductGroup not found ?");
             }
 
-            var dto = _mapper.Map<GetProductGroupDto>(productGroup);
+            var dto = _mapper.Map<GetProductGroupDto>(result);
+            return ResponseResult.Success(dto);
+        }
+
+
+        public async Task<ServiceResponse<GetProductDto>> AddProduct(AddProductDto addProduct)
+        {
+            var product = new Product();
+
+            var userId = Guid.Parse(GetUserId());
+            var date = Now();
+
+            product.Name = addProduct.Name;
+            product.Price = addProduct.Price;
+            product.Stock = addProduct.Stock;
+            product.ProductGroupId = addProduct.ProductGroupId;
+            product.IsActive = true;
+            product.CreatedByUserId = userId;
+            product.CreatedDate = date;
+            product.UpdatedByUserId = userId;
+            product.UpdatedDate = date;
+
+            _dBContext.Products.Add(product);
+            await _dBContext.SaveChangesAsync();
+
+            var result = await _dBContext.Products
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.ProductGroup)
+            .FirstOrDefaultAsync(x => x.Id == product.Id);
+
+            var dto = _mapper.Map<GetProductDto>(result);
+            return ResponseResult.Success(dto);
+        }
+
+        public async Task<ServiceResponse<GetProductDto>> DeleteProduct(int productId)
+        {
+            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.Id == productId);
+            if (product == null)
+            {
+                return ResponseResult.Failure<GetProductDto>("Product not found ?");
+            }
+
+
+            if (product.IsActive == false)
+            {
+                return ResponseResult.Failure<GetProductDto>("None Active ?");
+            }
+
+            var userId = Guid.Parse(GetUserId());
+            var date = Now();
+
+            product.IsActive = false;
+            product.UpdatedByUserId = userId;
+            product.UpdatedDate = date;
+
+            _dBContext.Products.Update(product);
+            await _dBContext.SaveChangesAsync();
+
+            var result = await _dBContext.Products
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.ProductGroup)
+            .FirstOrDefaultAsync(x => x.Id == productId);
+
+            var dto = _mapper.Map<GetProductDto>(result);
+            return ResponseResult.Success(dto);
+        }
+
+        public async Task<ServiceResponse<GetProductDto>> EditProduct(EditProductDto editProduct)
+        {
+            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.Id == editProduct.Id);
+            if (product == null)
+            {
+                return ResponseResult.Failure<GetProductDto>("Product not found ?");
+            }
+
+
+            var userId = Guid.Parse(GetUserId());
+            var date = Now();
+
+            product.Name = editProduct.Name;
+            product.Price = editProduct.Price;
+            product.Stock = editProduct.Stock;
+            product.ProductGroupId = editProduct.ProductGroupId;
+            product.UpdatedByUserId = userId;
+            product.UpdatedDate = date;
+
+            _dBContext.Products.Update(product);
+            await _dBContext.SaveChangesAsync();
+
+            var result = await _dBContext.Products
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.ProductGroup)
+            .FirstOrDefaultAsync(x => x.Id == editProduct.Id);
+
+            var dto = _mapper.Map<GetProductDto>(result);
+            return ResponseResult.Success(dto);
+        }
+
+        public async Task<ServiceResponse<List<GetProductDto>>> GetAllProduct()
+        {
+            var result = await _dBContext.Products
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.ProductGroup)
+            .AsNoTracking().ToListAsync();
+
+            var dto = _mapper.Map<List<GetProductDto>>(result);
+            return ResponseResult.Success(dto);
+        }
+
+        public async Task<ServiceResponse<GetProductDto>> GetProductById(int productId)
+        {
+            var result = await _dBContext.Products
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.ProductGroup)
+            .FirstOrDefaultAsync(x => x.Id == productId);
+
+            if (result == null)
+            {
+                return ResponseResult.Failure<GetProductDto>("Product not found ?");
+            }
+
+            var dto = _mapper.Map<GetProductDto>(result);
             return ResponseResult.Success(dto);
         }
     }
