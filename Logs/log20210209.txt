@@ -52,3 +52,9 @@ System.ArgumentNullException: Value cannot be null. (Parameter 'input')
    at Swashbuckle.AspNetCore.SwaggerUI.SwaggerUIMiddleware.Invoke(HttpContext httpContext)
    at Swashbuckle.AspNetCore.Swagger.SwaggerMiddleware.Invoke(HttpContext httpContext, ISwaggerProvider swaggerProvider)
    at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware.Invoke(HttpContext context)
+2021-02-09 10:34:40.848 +07:00 [INF] Starting web host
+2021-02-09 10:34:49.323 +07:00 [WRN] No type was specified for the decimal column 'Price' on entity type 'Product'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2021-02-09 14:02:41.347 +07:00 [INF] Starting web host
+2021-02-09 14:06:45.801 +07:00 [WRN] No type was specified for the decimal column 'Price' on entity type 'Product'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.
+2021-02-09 14:27:08.283 +07:00 [INF] Starting web host
+2021-02-09 14:27:19.869 +07:00 [WRN] No type was specified for the decimal column 'Price' on entity type 'Product'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values using 'HasColumnType()'.

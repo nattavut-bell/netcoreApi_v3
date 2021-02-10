@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
@@ -7,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NetCoreAPI_v3.Data;
 using NetCoreAPI_v3.DTOs;
+using NetCoreAPI_v3.Helpers;
 using NetCoreAPI_v3.Models;
+using System.Linq.Dynamic.Core;
 
 namespace NetCoreAPI_v3.Services
 {
@@ -16,13 +19,14 @@ namespace NetCoreAPI_v3.Services
         private readonly AppDBContext _dBContext;
         private readonly IMapper _mapper;
         private readonly ILogger<ProductService> _log;
+        private readonly IHttpContextAccessor _httpContext;
 
         public ProductService(AppDBContext dBContext, IMapper mapper, ILogger<ProductService> log, IHttpContextAccessor httpContext) : base(dBContext, mapper, httpContext)
         {
             _dBContext = dBContext;
             _mapper = mapper;
             _log = log;
-
+            _httpContext = httpContext;
         }
 
         public async Task<ServiceResponse<GetProductGroupDto>> AddProductGroup(AddProductGroupDto addProductGroup)
@@ -54,14 +58,14 @@ namespace NetCoreAPI_v3.Services
 
         public async Task<ServiceResponse<GetProductGroupDto>> DeleteProductGroup(int productGroupId)
         {
-            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.ProductGroupId == productGroupId || x.IsActive == true);
+            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.ProductGroupId == productGroupId && x.IsActive == true);
             if (product != null)
             {
                 return ResponseResult.Failure<GetProductGroupDto>("ProductGroup used ?");
             }
 
             var productGroup = await _dBContext.ProductGroups.FirstOrDefaultAsync(x => x.Id == productGroupId);
-            if (productGroup == null)
+            if (productGroup is null)
             {
                 return ResponseResult.Failure<GetProductGroupDto>("ProductGroup not found ?");
             }
@@ -91,11 +95,11 @@ namespace NetCoreAPI_v3.Services
             return ResponseResult.Success(dto);
         }
 
-        public async Task<ServiceResponse<GetProductGroupDto>> EditProductGroup(EditProductGroupDto editProductGroup)
+        public async Task<ServiceResponse<GetProductGroupDto>> EditProductGroup(int productGroupId, EditProductGroupDto editProductGroup)
         {
 
-            var productGroup = await _dBContext.ProductGroups.FirstOrDefaultAsync(x => x.Id == editProductGroup.Id);
-            if (productGroup == null)
+            var productGroup = await _dBContext.ProductGroups.FirstOrDefaultAsync(x => x.Id == productGroupId);
+            if (productGroup is null)
             {
                 return ResponseResult.Failure<GetProductGroupDto>("ProductGroup not found ?");
             }
@@ -115,7 +119,7 @@ namespace NetCoreAPI_v3.Services
             .Include(x => x.UpdatedByUser)
             .Include(x => x.CreatedByUser)
             .Include(x => x.Product)
-            .FirstOrDefaultAsync(x => x.Id == editProductGroup.Id);
+            .FirstOrDefaultAsync(x => x.Id == productGroupId);
 
             var dto = _mapper.Map<GetProductGroupDto>(result);
             return ResponseResult.Success(dto);
@@ -141,7 +145,7 @@ namespace NetCoreAPI_v3.Services
             .Include(x => x.Product)
             .FirstOrDefaultAsync(x => x.Id == productGroupId);
 
-            if (result == null)
+            if (result is null)
             {
                 return ResponseResult.Failure<GetProductGroupDto>("ProductGroup not found ?");
             }
@@ -184,7 +188,7 @@ namespace NetCoreAPI_v3.Services
         public async Task<ServiceResponse<GetProductDto>> DeleteProduct(int productId)
         {
             var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.Id == productId);
-            if (product == null)
+            if (product is null)
             {
                 return ResponseResult.Failure<GetProductDto>("Product not found ?");
             }
@@ -215,10 +219,10 @@ namespace NetCoreAPI_v3.Services
             return ResponseResult.Success(dto);
         }
 
-        public async Task<ServiceResponse<GetProductDto>> EditProduct(EditProductDto editProduct)
+        public async Task<ServiceResponse<GetProductDto>> EditProduct(int productId, EditProductDto editProduct)
         {
-            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.Id == editProduct.Id);
-            if (product == null)
+            var product = await _dBContext.Products.FirstOrDefaultAsync(x => x.Id == productId);
+            if (product is null)
             {
                 return ResponseResult.Failure<GetProductDto>("Product not found ?");
             }
@@ -241,7 +245,7 @@ namespace NetCoreAPI_v3.Services
             .Include(x => x.UpdatedByUser)
             .Include(x => x.CreatedByUser)
             .Include(x => x.ProductGroup)
-            .FirstOrDefaultAsync(x => x.Id == editProduct.Id);
+            .FirstOrDefaultAsync(x => x.Id == productId);
 
             var dto = _mapper.Map<GetProductDto>(result);
             return ResponseResult.Success(dto);
@@ -274,6 +278,77 @@ namespace NetCoreAPI_v3.Services
 
             var dto = _mapper.Map<GetProductDto>(result);
             return ResponseResult.Success(dto);
+        }
+
+
+        public async Task<ServiceResponseWithPagination<List<GetProductGroupDto>>> GetProductGroupFilter(ProductGroupFilterDto filter)
+        {
+            var queryable = _dBContext.ProductGroups
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.Product)
+            .AsQueryable();
+
+            //Filter
+            if (!string.IsNullOrWhiteSpace(filter.SearchDetail))
+            {
+                queryable = queryable.Where(x => x.Name.Contains(filter.SearchDetail));
+            }
+
+            //Ordering
+            if (!string.IsNullOrWhiteSpace(filter.OrderingField))
+            {
+                try
+                {
+                    queryable = queryable.OrderBy($"{filter.OrderingField} {(filter.AscendingOrder ? "ASC" : "DESC")}");
+                }
+                catch
+                {
+                    return ResponseResultWithPagination.Failure<List<GetProductGroupDto>>($"Could not order by Filed: {filter.OrderingField}");
+                }
+            }
+
+            var paginationResult = await _httpContext.HttpContext
+                .InsertPaginationParametersInResponse(queryable, filter.RecordsPerPage, filter.Page);
+            var result = await queryable.Paginate(filter).ToListAsync();
+            var dto = _mapper.Map<List<GetProductGroupDto>>(result);
+
+            return ResponseResultWithPagination.Success<List<GetProductGroupDto>>(dto, paginationResult);
+        }
+
+        public async Task<ServiceResponseWithPagination<List<GetProductDto>>> GetProductFilter(ProductFilterDto filter)
+        {
+            var queryable = _dBContext.Products
+            .Include(x => x.CreatedByUser)
+            .Include(x => x.UpdatedByUser)
+            .Include(x => x.ProductGroup)
+            .AsQueryable();
+
+            //Filter
+            if (!string.IsNullOrWhiteSpace(filter.SearchDetail))
+            {
+                queryable = queryable.Where(x => x.Name.Contains(filter.SearchDetail));
+            }
+
+            //Ordering
+            if (!string.IsNullOrWhiteSpace(filter.OrderingField))
+            {
+                try
+                {
+                    queryable = queryable.OrderBy($"{filter.OrderingField} {(filter.AscendingOrder ? "ASC" : "DESC")}");
+                }
+                catch
+                {
+                    return ResponseResultWithPagination.Failure<List<GetProductDto>>($"Could not order by Filed: {filter.OrderingField}");
+                }
+            }
+
+            var paginationResult = await _httpContext.HttpContext
+                .InsertPaginationParametersInResponse(queryable, filter.RecordsPerPage, filter.Page);
+            var result = await queryable.Paginate(filter).ToListAsync();
+            var dto = _mapper.Map<List<GetProductDto>>(result);
+
+            return ResponseResultWithPagination.Success<List<GetProductDto>>(dto, paginationResult);
         }
     }
 }
